@@ -1,0 +1,30 @@
+{
+  "name": "homebridge-daikin-skyfi",
+  "version": "0.1",
+  "description": "daikin plugin for homebridge: https://github.com/hidewools/homebridge-daikin-skyfi",
+  "license": "ISC",
+  "keywords": [
+    "homebridge-plugin"
+  ],
+  "engines": {
+    "node": ">=0.12.0",
+    "homebridge": ">=0.2.0"
+  },
+  "author": "Hide Woolls",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hidewools/homebridge-daikin-skyfi.git"
+  },
+  "dependencies": {
+    "request": "^2.65.0"
+  },
+  "bugs": {
+    "url": "https://github.com/hidewools/homebridge-daikin-skyfi/issues"
+  },
+  "homepage": "https://github.com/hidewools/homebridge-daikin-skyfi/blob/master/README.md",
+  "main": "index.js",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
