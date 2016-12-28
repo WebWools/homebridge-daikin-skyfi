@@ -7,7 +7,7 @@ Supports Daikin Air Conditioners (that use SKYFi) on HomeBridge.
 The following steps will install HomeBridge-DaikinSKYFi. In it's current form allows you to turn the power on or off, set heating or cooling mode and set the target temperature. The install may require you to run as an administrator (using a different login or sudo):
 
 1. Install homebridge using: npm install -g homebridge
-2. *** Installation instructions for the homebridge-daikin-skyfi plugin have not been written yet. Can I use npm? I will need to investigate as I have never done this before ... ***
+2. Install this plugin using: npm install -g homebridge-daikin-skyfi
 3. Update your configuration file. See sample-config.json in this repository for a sample.
 
 

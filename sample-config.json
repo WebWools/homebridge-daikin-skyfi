@@ -10,7 +10,7 @@
 
     "accessories": [
         {
-            "accessory": "Daikin-SKYFi",
+            "accessory": "DaikinSKYFi",
             "name": "Daikin SKYFi",
             "apiroute": "http://192.168.0.99:2000",
             "pass": "01234",
