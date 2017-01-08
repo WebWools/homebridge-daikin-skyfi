@@ -183,6 +183,7 @@ DaikinSKYFi.prototype = {
 		this.i.sendTargetTemperature(this.i.targetTemperatureRequested);
 	      }
 	    }
+	    this.i.targetTemperatureRequested = null;
 	      	      
 	  } else {
 	    this.i.httpAttemptsSinceLastCompletedRequest ++;
