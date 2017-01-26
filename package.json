@@ -1,6 +1,6 @@
 {
   "name": "homebridge-daikin-skyfi",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "daikin plugin for homebridge: https://github.com/hidewools/homebridge-daikin-skyfi",
   "license": "ISC",
   "keywords": [
