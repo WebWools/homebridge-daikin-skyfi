@@ -29,7 +29,8 @@ Configuration sample:
                 "name": "DaikinSKYFi",
                 "apiroute": "http://192.168.X.X:2000",
                 "pass": "XXXXX",
-                "type": "SKYFi"
+                "type": "SKYFi",
+                "logprefix": "Kitchen"
             }
         ],
 
@@ -38,7 +39,7 @@ Configuration sample:
 ```
 # Notes on the CONFIG
 
-The apiroute is the IP address of your with the port 2000 attached. Example: "http://192.168.0.30:2000". The pass is the passcode you use to access the unit using the Daikin SKYFi app on your phone. Example "01234".
+The apiroute is the IP address of your with the port 2000 attached. Example: "http://192.168.0.30:2000". The pass is the passcode you use to access the unit using the Daikin SKYFi app on your phone. Example "01234". The logprefix is used to prefix log messages and may be useful if you have more than one SKYFi unit.
 
 # Credit
 

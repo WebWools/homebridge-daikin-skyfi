@@ -11,7 +11,8 @@
             "accessory": "DaikinSKYFi",
             "name": "Daikin Demo",
             "apiroute": "http://myurl.com:2000",
-	    "type": "SKYfi"
+	    "type": "SKYfi",
+	    "logprefix": "Upstairs"
         }
     ],
 
@@ -56,11 +57,11 @@ function DaikinSKYFi(log, config) {
 
 	this.log = log;
 	
-	this.httpRequestGetInfo = config.apiroute + "/set.cgi?pass=" + config.pass;
-	this.httpSetTempature = this.httpRequestGetInfo + "&t=";
-	this.httpSetMode = this.httpRequestGetInfo + "&m=";
+	this.httpRequestBase = config.apiroute + "/set.cgi?pass=" + config.pass;
+	this.httpSetTempature = this.httpRequestBase + "&t=";
+	this.httpSetMode = this.httpRequestBase + "&m=";
 	this.httpCurrentlyRequestingInfo = false;
-	this.httpAttemptsSinceLastCompletedRequest - 0;
+	this.httpAttemptsSinceLastCompletedRequest = 0;
 		
 	this.service = new Service.Thermostat(this.name);
 		
@@ -72,18 +73,20 @@ function DaikinSKYFi(log, config) {
 	this.currentCoolingStateFunction = null;
 	
 	this.maxTemp = 32.0;
+	
+	this.logPrefix = config.logprefix || "SKYFi";
       }
 
 DaikinSKYFi.prototype = {
 
 	identify: function(callback) {
-		this.log("Identify requested!");
+		this.log(this.logPrefix + ": Identify requested!");
 		callback(null);
 	},
 
 	getServices: function() {
 
-		this.log("getServices");
+		this.log(this.logPrefix + ": Get services");
 
 		this.service
 			.getCharacteristic(Characteristic.Name)
@@ -132,6 +135,9 @@ DaikinSKYFi.prototype = {
 	  
 	    if (!error && response.statusCode == 200) {
 	      
+	      if ( this.i.httpAttemptsSinceLastCompletedRequest > 0 ) {
+		this.i.log(this.i.logPrefix + ": Info received from SKYfi");	
+	      }
 	      this.i.httpAttemptsSinceLastCompletedRequest = 0;
 	      
 	      var json = JSON.parse(convertDaikinToJSON(body));
@@ -149,24 +155,28 @@ DaikinSKYFi.prototype = {
 		switch(json.acmode) {
 		  case "2":
 		    responseHeatingCoolingState = Characteristic.CurrentHeatingCoolingState.HEAT;
-		    this.i.log("Current state: HEAT, Target Temp: " + responseTargetTemperature + ", Current Temp: " + responseCurrentTemperature);
+		    this.i.log(this.i.logPrefix + ": Current state: HEAT, Target Temp: " + responseTargetTemperature + ", Current Temp: " + responseCurrentTemperature);
 		  break;
   		  
 		  case "8":
 		    responseHeatingCoolingState = Characteristic.CurrentHeatingCoolingState.COOL;
-		    this.i.log("Current state: COOL, Target Temp: " + responseTargetTemperature + ", Current Temp: " + responseCurrentTemperature);
+		    this.i.log(this.i.logPrefix + ": Current state: COOL, Target Temp: " + responseTargetTemperature + ", Current Temp: " + responseCurrentTemperature);
 		  break;
   
+		  case "1":
+		  case "3":
 		  case "9":
-		    responseHeatingCoolingState = 3; // Characteristic.CurrentHeatingCoolingState.AUTO;
-		    this.i.log("Current state: AUTO, Target Temp: " + responseTargetTemperature + ", Current Temp: " + responseCurrentTemperature);
+		    responseHeatingCoolingState = Characteristic.CurrentHeatingCoolingState.AUTO;
+		    this.i.log(this.i.logPrefix + ": Current state: AUTO, Target Temp: " + responseTargetTemperature + ", Current Temp: " + responseCurrentTemperature);
 		  break;
 
 		  default:
-		    responseHeatingCoolingState = 3; //Characteristic.CurrentHeatingCoolingState.AUTO;
-		    this.i.log("Unknown cooling state returned from unit - defaulted to AUTO");
+		    responseHeatingCoolingState = Characteristic.CurrentHeatingCoolingState.AUTO;
+		    this.i.log(this.i.logPrefix + ": Unknown state returned from unit (" + json.acmode + ")" + " - defaulted to AUTO");
 		  break;
 	      }
+	    } else {
+	      this.i.log(this.i.logPrefix + ": Current state: OFF");
 	    }
 	    
 	    if( this.i.currentCoolingStateFunction ) this.i.currentCoolingStateFunction(null, responseHeatingCoolingState);
@@ -175,11 +185,11 @@ DaikinSKYFi.prototype = {
 	    if( this.i.targetCoolingStateFunction ) this.i.targetCoolingStateFunction(null, responseHeatingCoolingState);
 	    this.i.targetCoolingStateFunction = null;
 	  		  
-	    // Finally, if we are out of sync then attempt to sync
+	    // Finally, if we are out of sync then go to sync
 	    if ( this.i.targetTemperatureRequested == null) {
 	    } else {
 	      if ( this.i.targetTemperatureRequested != responseTargetTemperature ) {
-		this.i.log("Temp out of sync. Current Target = " + responseTargetTemperature + ", Last Temp Requested = " + this.i.targetTemperatureRequested);
+		this.i.log(this.i.logPrefix + ": Temp out of sync. Current Target = " + responseTargetTemperature + ", Last Temp Requested = " + this.i.targetTemperatureRequested);
 		this.i.sendTargetTemperature(this.i.targetTemperatureRequested);
 	      }
 	    }
@@ -187,12 +197,11 @@ DaikinSKYFi.prototype = {
 	      	      
 	  } else {
 	    this.i.httpAttemptsSinceLastCompletedRequest ++;
-            this.i.log("Received error so trying HTTP request again: " + error)
-	    if ( this.i.httpAttemptsSinceLastCompletedRequest < 3 ) {
-	      this.i.sendCommandToDaikin(this.i.httpRequestGetInfo, this.i.receiveDaikinInfo);
-	    } else {
-	      httpAttemptsSinceLastCompletedRequest = 0;
-	      this.i.log("Error getting info. Given up: %s", error)
+            this.i.log(this.i.logPrefix + ": Attempt #: " + this.i.httpAttemptsSinceLastCompletedRequest + " received error: " + error)
+            this.i.sendCommandToDaikin(this.i.httpRequestBase, this.i.receiveDaikinInfo);
+	    if ( this.i.httpAttemptsSinceLastCompletedRequest == 9 ) {
+	      this.i.log(this.i.logPrefix + ": Error getting info. Given up")
+	      
 	      if( this.i.targetTemperatureCallback ) this.i.targetTemperatureCallback(error);
 	      this.i.targetTemperatureCallback = null;
 
@@ -201,28 +210,30 @@ DaikinSKYFi.prototype = {
 
 	      if( this.i.currentCoolingStateFunction ) this.i.currentCoolingStateFunction(error);
 	      this.i.currentCoolingStateFunction = null;
+
+	      this.i.httpAttemptsSinceLastCompletedRequest = 0;
 	    }
 	  }
 	},
 	  
 	getCurrentHeatingCoolingState: function(callback) {
   	  this.currentCoolingStateFunction = callback;
-	  this.sendCommandToDaikin(this.httpRequestGetInfo, this.receiveDaikinInfo);
+	  this.sendCommandToDaikin(this.httpRequestBase, this.receiveDaikinInfo);
 	},
 
 	getTargetHeatingCoolingState: function(callback) {
 	  this.targetCoolingStateFunction = callback;
-	  this.sendCommandToDaikin(this.httpRequestGetInfo, this.receiveDaikinInfo);
+	  this.sendCommandToDaikin(this.httpRequestBase, this.receiveDaikinInfo);
 	},
 
 	getTargetTemperature: function(callback) {
 	  this.targetTemperatureCallback = callback;
-	  this.sendCommandToDaikin(this.httpRequestGetInfo, this.receiveDaikinInfo);
+	  this.sendCommandToDaikin(this.httpRequestBase, this.receiveDaikinInfo);
 	},
 	
 	getCurrentTemperature: function(callback) {
 	  this.currentTemperatureCallback = callback;
-	  this.sendCommandToDaikin(this.httpRequestGetInfo, this.receiveDaikinInfo);
+	  this.sendCommandToDaikin(this.httpRequestBase, this.receiveDaikinInfo);
 	},
 
 	sendTargetTemperature: function(value) {
@@ -232,12 +243,12 @@ DaikinSKYFi.prototype = {
 	setTargetTemperature: function(value, callback) {
 	  newTemp = value;
 	  if ( parseFloat(value) > this.maxTemp ) {
-	    this.log("Temp requestsed: " + value + " Max temp: " + this.maxTemp);
+	    this.log(this.logPrefix + ": Temp requestsed: " + value + " Max temp: " + this.maxTemp);
 	    newTemp = this.maxTemp;
 	  }
 
 	  this.targetTemperatureRequested = newTemp;
-	  this.log("setTargetTemperature: " + this.targetTemperatureRequested);
+	  this.log(this.logPrefix + ": Set Target Temperature: " + this.targetTemperatureRequested);
 	  this.sendTargetTemperature(this.targetTemperatureRequested);
 	  callback(null);
 	},
@@ -249,25 +260,30 @@ DaikinSKYFi.prototype = {
 	  	  
 	  switch(value) {
 		  case Characteristic.CurrentHeatingCoolingState.OFF:
+   		    this.log(this.logPrefix + ": Turn off");
 		    break;		    
 		    
 		  case Characteristic.CurrentHeatingCoolingState.HEAT:
 		    targetHeatingCoolingState = 2;
 		    targetPower = 1;
+   		    this.log(this.logPrefix + ": Set mode to HEAT");
 		  break;
   		  
 		  case Characteristic.CurrentHeatingCoolingState.COOL:
 		    targetHeatingCoolingState = 8;
 		    targetPower = 1;
+   		    this.log(this.logPrefix + ": Set mode to COOL");
 		  break;
   
-		  case 3: // Characteristic.CurrentHeatingCoolingState.AUTO:
-		    targetHeatingCoolingState = 9;
+		  case Characteristic.CurrentHeatingCoolingState.AUTO:
+		  case 3: // Characteristic.CurrentHeatingCoolingState.AUTO is undefined?
+		    targetHeatingCoolingState = 1;
 		    targetPower = 1;
+   		    this.log(this.logPrefix + ": Set mode to AUTO");
 		  break;
 
 		  default:
-		    this.log("Unknown cooling state returned from unit (" + value + ")" + "- defaulted to OFF");
+		    this.log(this.logPrefix + ": Unknown state sent to setTargetHeatingCoolingState (" + value + ")" + " - defaulted to OFF");
 		  break;
 	      }
 	  this.sendCommandToDaikin(this.httpSetMode + targetHeatingCoolingState + "&p=" + targetPower, this.receiveDaikinInfo);
