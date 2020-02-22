@@ -136,7 +136,7 @@ DaikinSKYFi.prototype = {
 	    if (!error && response.statusCode == 200) {
 	      
 	      if ( this.i.httpAttemptsSinceLastCompletedRequest > 0 ) {
-		this.i.log(this.i.logPrefix + ": Info received from SKYfi");	
+              this.i.log(this.i.logPrefix + ": Info has been received from SKYfi" + response.statusCode);
 	      }
 	      this.i.httpAttemptsSinceLastCompletedRequest = 0;
 	      
@@ -247,8 +247,8 @@ DaikinSKYFi.prototype = {
 	    newTemp = this.maxTemp;
 	  }
 
-	  this.targetTemperatureRequested = newTemp;
-	  this.log(this.logPrefix + ": Set Target Temperature: " + this.targetTemperatureRequested);
+	  this.targetTemperatureRequested = Math.round(newTemp);
+	  this.log(this.logPrefix + ": Set target temperature: " + this.targetTemperatureRequested);
 	  this.sendTargetTemperature(this.targetTemperatureRequested);
 	  callback(null);
 	},
